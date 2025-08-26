@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>📖 القرآن الكريم — تقليب تلقائي كل دقيقة</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b1220; --panel:#0f1628; --panel-2:#111b2f; --text:#e5e7eb; --muted:#9ca3af; --ring:#334155;
+      --accent:#22c55e; --warn:#f59e0b; --danger:#ef4444; --blue:#3b82f6;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%; margin:0; padding:0}
+    body{font-family:"Cairo", system-ui, Segoe UI, Roboto, Arial; background: radial-gradient(1200px 900px at 85% -10%, #1f2937 0%, #0f172a 40%, #070c16 100%); color:var(--text);}
+    .shell{display:grid; grid-template-rows:auto 1fr auto; height:100vh;}
+
+    header{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; background:linear-gradient(180deg,#172033,#0e1626); border-bottom:1px solid var(--ring)}
+    header h1{margin:0; font-weight:900; font-size:18px}
+
+    .controls{display:grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap:10px; padding:12px; background:linear-gradient(180deg, var(--panel), var(--panel-2)); border-bottom:1px solid var(--ring)}
+    .field{display:grid; gap:6px}
+    .label{font-size:12px; color:var(--muted)}
+    .input, select{width:100%; background:#0b1220; color:var(--text); border:1px solid var(--ring); border-radius:12px; padding:10px 12px; outline:none}
+
+    .btn{appearance:none; border:none; cursor:pointer; user-select:none; padding:12px 14px; border-radius:14px; font-weight:800; background:#0b1220; color:var(--text); border:1px solid var(--ring); transition:.2s; box-shadow: inset 0 6px 18px rgba(0,0,0,.14)}
+    .btn:hover{transform:translateY(-1px)} .btn:active{transform:translateY(0)}
+    .btn.primary{background:linear-gradient(180deg,#1a3c2a,#0f2c1e); border-color:#1a3127}
+    .btn.warn{background:linear-gradient(180deg,#5a3a0c,#3d2907)}
+    .btn.danger{background:linear-gradient(180deg,#5a1616,#3d0e0e)}
+    .btn.blue{background:linear-gradient(180deg,#163a6b,#0f274a)}
+
+    .viewer-container {
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 160px); /* حساب الارتفاع بناءً على باقي العناصر */
+      overflow: hidden;
+      background: #000;
+    }
+    
+    .viewer{
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    canvas{
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      background:#111;
+      box-shadow:0 10px 40px rgba(0,0,0,.35);
+    }
+
+    .overlay{position:absolute; inset:8px; display:flex; justify-content:space-between; align-items:flex-start; pointer-events:none}
+    .chip{pointer-events:auto; background:#0008; color:#fff; padding:6px 10px; border-radius:10px; font-size:13px; border:1px solid #ffffff33}
+
+    footer{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; background:#0b1220; color:#94a3b8; border-top:1px solid var(--ring); font-size:12px}
+    .kbd{font-family: ui-monospace, Menlo, Consolas, monospace; background:#0f172a; border:1px solid #1f2937; padding:2px 6px; border-radius:6px}
+
+    .big-controls{position:absolute; inset:0; display:flex; justify-content:space-between; align-items:center; padding:16px; pointer-events:none}
+    .big-controls .navBtn{pointer-events:auto; width:64px; height:64px; border-radius:50%; border:1px solid #ffffff33; background:#0007; color:#fff; font-size:28px; display:grid; place-items:center;}
+    .big-controls .navBtn:disabled{opacity:.35}
+
+    @media (max-width:720px){
+      header h1{font-size:16px}
+      .big-controls .navBtn{width:54px; height:54px}
+      .viewer-container {height: calc(100vh - 200px);}
+    }
+  </style>
+</head>
+<body>
+<div class="shell" id="app">
+  <header>
+    <h1>📖 القرآن الكريم — تقليب تلقائي</h1>
+    <div style="display:flex; gap:8px; align-items:center">
+      <button id="openBtn" class="btn blue">اختر ملف PDF</button>
+      <button id="fsBtn" class="btn">ملء الشاشة</button>
+    </div>
+    <input id="fileInput" type="file" accept="application/pdf" hidden />
+  </header>
+
+  <section class="controls">
+    <div class="field">
+      <label class="label">الصفحة الحالية / المجموع</label>
+      <div style="display:flex; gap:8px">
+        <input id="pageInput" class="input" type="number" min="1" value="1" style="max-width:120px" />
+        <button id="goBtn" class="btn">اذهب</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">الفاصل الزمني للتقليب (ثوانٍ)</label>
+      <div style="display:flex; gap:8px; align-items:center">
+        <input id="intervalInput" class="input" type="number" min="10" step="5" value="60" style="max-width:140px" />
+        <button id="applyInterval" class="btn">تطبيق</button>
+      </div>
+      <small class="label" id="nextFlip">التقليب كل 60 ثانية</small>
+    </div>
+
+    <div class="field">
+      <label class="label">التحكم</label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button id="playBtn" class="btn primary">تشغيل تلقائي</button>
+        <button id="pauseBtn" class="btn warn" disabled>إيقاف مؤقت</button>
+        <button id="prevBtn" class="btn">◀︎ السابقة</button>
+        <button id="nextBtn" class="btn">التالي ▶︎</button>
+        <label class="btn" style="display:flex; gap:8px; align-items:center">
+          <input id="loopToggle" type="checkbox" checked /> تكرار عند آخر الصفحة
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <div class="viewer-container">
+    <section class="viewer" id="viewer">
+      <canvas id="pdfCanvas"></canvas>
+      <div class="big-controls">
+        <button id="bigPrev" class="navBtn">◀</button>
+        <button id="bigNext" class="navBtn">▶</button>
+      </div>
+      <div class="overlay">
+        <span class="chip" id="pageChip">الصفحة 1 / —</span>
+        <span class="chip" id="status">جاهز</span>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <div>اختصارات: <span class="kbd">Space</span> تشغيل/إيقاف — <span class="kbd">←/→</span> السابق/التالي — <span class="kbd">F</span> ملء الشاشة</div>
+    <div id="saved">—</div>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(function(){
+  const fileInput = document.getElementById('fileInput');
+  const openBtn = document.getElementById('openBtn');
+  const fsBtn = document.getElementById('fsBtn');
+  const canvas = document.getElementById('pdfCanvas');
+  const ctx = canvas.getContext('2d');
+  const pageChip = document.getElementById('pageChip');
+  const statusChip = document.getElementById('status');
+  const viewer = document.getElementById('viewer');
+  const viewerContainer = document.querySelector('.viewer-container');
+
+  const pageInput = document.getElementById('pageInput');
+  const goBtn = document.getElementById('goBtn');
+  const intervalInput = document.getElementById('intervalInput');
+  const applyInterval = document.getElementById('applyInterval');
+  const nextFlip = document.getElementById('nextFlip');
+
+  const playBtn = document.getElementById('playBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const bigPrev = document.getElementById('bigPrev');
+  const bigNext = document.getElementById('bigNext');
+  const loopToggle = document.getElementById('loopToggle');
+  const saved = document.getElementById('saved');
+
+  let pdf = null;
+  let pageNum = 1;
+  let pageCount = 0;
+  let timer = null;
+  let intervalSec = 60;
+  let fileName = null;
+
+  if (window['pdfjsLib']) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  function setStatus(t){ statusChip.textContent = t; }
+  function setPageChip(){ pageChip.textContent = `الصفحة ${pageNum} / ${pageCount||'—'}`; pageInput.value = pageNum; }
+  function saveProgress(){ if(!fileName) return; try{ localStorage.setItem('quran:auto:pager:'+fileName, JSON.stringify({pageNum, intervalSec, loop: loopToggle.checked})); saved.textContent='تم الحفظ'; setTimeout(()=>saved.textContent='—',800);}catch(e){} }
+  function loadProgress(){ if(!fileName) return; try{ const raw = localStorage.getItem('quran:auto:pager:'+fileName); if(!raw) return; const d = JSON.parse(raw); if(d.pageNum) pageNum = d.pageNum; if(d.intervalSec) { intervalSec = d.intervalSec; intervalInput.value = intervalSec; nextFlip.textContent = `التقليب كل ${intervalSec} ثانية`; } if(typeof d.loop==='boolean') loopToggle.checked = d.loop; }catch(e){} }
+
+  function calculateScale(viewport) {
+    const containerWidth = viewerContainer.clientWidth;
+    const containerHeight = viewerContainer.clientHeight;
+    
+    const scaleX = containerWidth / viewport.width;
+    const scaleY = containerHeight / viewport.height;
+    
+    return Math.min(scaleX, scaleY) * 0.95; // 95% للحفاظ على هوامش صغيرة
+  }
+
+  async function render(){
+    if(!pdf) return;
+    setStatus('جارٍ العرض…');
+    
+    try {
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({scale: 1});
+      const scale = calculateScale(viewport);
+      const scaledViewport = page.getViewport({scale});
+      
+      canvas.width = scaledViewport.width;
+      canvas.height = scaledViewport.height;
+      
+      // مسح أي تحويلات سابقة
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      
+      await page.render({
+        canvasContext: ctx,
+        viewport: scaledViewport
+      }).promise;
+      
+      setPageChip();
+      setStatus('جاهز');
+      saveProgress();
+    } catch (error) {
+      console.error('Error rendering page:', error);
+      setStatus('خطأ في العرض');
+    }
+  }
+
+  function play(){ 
+    if(timer) return; 
+    playBtn.textContent='قيد التشغيل'; 
+    playBtn.disabled=true; 
+    pauseBtn.disabled=false; 
+    setStatus('تقليب تلقائي…');
+    
+    timer = setInterval(()=>{
+      if(pageNum < pageCount){ 
+        pageNum++; 
+        render(); 
+      }
+      else if(loopToggle.checked){ 
+        pageNum = 1; 
+        render(); 
+      }
+      else { 
+        pause(); 
+      }
+    }, intervalSec*1000);
+  }
+  
+  function pause(){ 
+    if(!timer) return; 
+    clearInterval(timer); 
+    timer=null; 
+    playBtn.textContent='تشغيل تلقائي'; 
+    playBtn.disabled=false; 
+    pauseBtn.disabled=true; 
+    setStatus('متوقف مؤقتًا'); 
+  }
+
+  function next(){ if(!pdf) return; if(pageNum < pageCount){ pageNum++; render(); } }
+  function prev(){ if(!pdf) return; if(pageNum > 1){ pageNum--; render(); } }
+  function goTo(p){ if(!pdf) return; const n = Math.min(pageCount, Math.max(1, Math.floor(p||1))); pageNum = n; render(); }
+
+  openBtn.addEventListener('click', ()=> fileInput.click());
+  fileInput.addEventListener('change', async (e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    fileName = file.name;
+    setStatus('تحميل الملف…');
+    const fr = new FileReader();
+    fr.onload = async ()=>{
+      try {
+        const typedarray = new Uint8Array(fr.result);
+        pdf = await pdfjsLib.getDocument({data: typedarray}).promise;
+        pageCount = pdf.numPages; 
+        pageNum = 1; 
+        setPageChip(); 
+        loadProgress(); 
+        await render();
+      } catch (error) {
+        console.error('Error loading PDF:', error);
+        setStatus('خطأ في تحميل الملف');
+      }
+    };
+    fr.onerror = () => setStatus('خطأ في قراءة الملف');
+    fr.readAsArrayBuffer(file);
+  });
+
+  fsBtn.addEventListener('click', ()=>{
+    if(!document.fullscreenElement){
+      viewerContainer.requestFullscreen?.().catch(err => {
+        console.error('Error attempting to enable fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen?.();
+    }
+  });
+
+  applyInterval.addEventListener('click', ()=>{ 
+    const v = Math.max(5, Math.floor(+intervalInput.value||60)); 
+    intervalSec = v; 
+    nextFlip.textContent = `التقليب كل ${v} ثانية`; 
+    saveProgress(); 
+    if(timer){ pause(); play(); } 
+  });
+
+  playBtn.addEventListener('click', play);
+  pauseBtn.addEventListener('click', pause);
+  nextBtn.addEventListener('click', next);
+  prevBtn.addEventListener('click', prev);
+  bigNext.addEventListener('click', next);
+  bigPrev.addEventListener('click', prev);
+  goBtn.addEventListener('click', ()=> goTo(+pageInput.value));
+
+  window.addEventListener('keydown', (e)=>{
+    if(e.key === ' ') { e.preventDefault(); timer ? pause() : play(); }
+    if(e.key === 'ArrowRight') next();
+    if(e.key === 'ArrowLeft') prev();
+    if(e.key.toLowerCase() === 'f') fsBtn.click();
+  });
+
+  let resizeTimeout = null;
+  window.addEventListener('resize', ()=>{ 
+    if(!pdf) return; 
+    clearTimeout(resizeTimeout); 
+    resizeTimeout = setTimeout(() => {
+      render();
+    }, 150);
+  });
+
+  // بدء التشغيل التلقائي عند تحميل الصفحة إذا كان هناك ملف محفوظ
+  window.addEventListener('load', () => {
+    const savedFile = localStorage.getItem('quran:auto:pager:lastFile');
+    if(savedFile) {
+      // يمكنك هنا إضافة منطق لتحميل الملف المحفوظ تلقائياً إذا أردت
+    }
+  });
+})();
+</script>
+</body>
+</html>
