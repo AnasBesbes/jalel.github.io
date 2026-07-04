@@ -4,7 +4,369 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>📖 القرآن الكريم — تقليب تلقائي كل دقيقة</title>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconn<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>📖 المصحف الشريف — تقليب تلقائي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Scheherazade+New:wght@400;700&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#06201b; --ink-2:#082a22; --panel:#0c332a; --panel-2:#0a2c24; --panel-3:#0f3b30;
+    --gold:#cba14e; --gold-soft:#ecd394; --gold-deep:#a67c2e;
+    --cream:#f6efdf; --text:#eee6d2; --muted:#9db5a7; --faint:#6f8b7d;
+    --line:rgba(203,161,78,.20); --line-2:rgba(203,161,78,.4);
+    --danger:#e07a63;
+    --shadow:0 22px 60px rgba(0,0,0,.5);
+    --glow:0 0 26px rgba(236,211,148,.28);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font-family:"Cairo",system-ui,"Segoe UI",Roboto,Arial;color:var(--text);
+    background:
+      radial-gradient(1100px 780px at 90% -12%, #14483c 0%, #0a2c24 44%, #051a15 100%),
+      var(--ink);
+    overflow:hidden;
+  }
+  /* faint geometric star texture */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.05;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'><g fill='none' stroke='%23ecd394' stroke-width='1'><path d='M30 4l7 12 13 3-9 10 2 13-13-6-13 6 2-13-9-10 13-3z'/></g></svg>");
+    background-size:120px 120px;
+  }
+  .shell{position:relative;z-index:1;display:grid;grid-template-rows:auto auto 1fr auto;height:100vh}
+
+  /* ===== Header ===== */
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 24px;
+    background:linear-gradient(180deg,rgba(10,44,36,.96),rgba(6,32,27,.96));
+    border-bottom:1px solid var(--line);position:relative;
+  }
+  header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--gold-deep) 15%,var(--gold-soft) 50%,var(--gold-deep) 85%,transparent);opacity:.75}
+  .brand{display:flex;align-items:center;gap:13px;min-width:0}
+  .seal{
+    width:46px;height:46px;flex:none;border-radius:50%;display:grid;place-items:center;
+    background:radial-gradient(circle at 32% 28%,#1a5645,#0a2c24);
+    border:1.5px solid var(--line-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),var(--glow);
+  }
+  .seal svg{width:26px;height:26px}
+  .brand h1{margin:0;font-family:"Amiri",serif;font-weight:700;font-size:26px;line-height:1.1;color:var(--cream);letter-spacing:.3px}
+  .brand .sub{font-size:11.5px;color:var(--gold-soft);font-family:"Cairo";font-weight:600;margin-top:1px;letter-spacing:.04em}
+  .head-actions{display:flex;gap:10px;align-items:center;flex:none}
+
+  .btn{
+    appearance:none;cursor:pointer;user-select:none;font-family:"Cairo";font-weight:700;font-size:14px;
+    color:var(--text);background:linear-gradient(180deg,var(--panel-3),var(--panel-2));
+    border:1px solid var(--line);border-radius:13px;padding:11px 17px;display:inline-flex;align-items:center;gap:8px;
+    transition:transform .15s,border-color .2s,background .2s,box-shadow .2s;
+  }
+  .btn svg{width:17px;height:17px}
+  .btn:hover{transform:translateY(-1px);border-color:var(--line-2)}
+  .btn:active{transform:translateY(0)}
+  .btn:focus-visible{outline:2px solid var(--gold-soft);outline-offset:2px}
+  .btn.primary{color:#241704;border:none;background:linear-gradient(180deg,var(--gold-soft),var(--gold));box-shadow:0 6px 20px rgba(203,161,78,.32)}
+  .btn.primary:hover{box-shadow:0 9px 28px rgba(203,161,78,.46)}
+  .btn.ghost{background:transparent}
+  .btn:disabled{opacity:.42;cursor:default;transform:none;box-shadow:none}
+
+  /* ===== Controls ===== */
+  .controls{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:15px;padding:15px 24px;
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));border-bottom:1px solid var(--line);
+  }
+  .field{display:grid;gap:8px}
+  .label{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.2px;display:flex;align-items:center;gap:6px}
+  .label svg{width:13px;height:13px;color:var(--gold-soft)}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .input{
+    font-family:"Cairo";font-size:14px;color:var(--text);background:#06211b;
+    border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none;transition:border-color .2s;
+  }
+  .input:focus{border-color:var(--gold)}
+  .hint{font-size:12px;color:var(--muted)} .hint b{color:var(--gold-soft);font-weight:700;font-family:"Cairo"}
+  .switch{display:inline-flex;gap:8px;align-items:center;cursor:pointer;font-size:13px;color:var(--text);
+    padding:9px 13px;border:1px solid var(--line);border-radius:10px;background:#06211b}
+  .switch input{accent-color:var(--gold)}
+
+  /* ===== Stage / Viewer ===== */
+  .stage{position:relative;overflow:hidden;padding:20px 24px}
+  .flip-progress{position:absolute;top:0;left:0;right:0;height:3px;background:rgba(203,161,78,.12);z-index:6}
+  .flip-progress .fill{height:100%;width:0;background:linear-gradient(90deg,var(--gold-deep),var(--gold-soft));box-shadow:0 0 14px var(--gold-soft)}
+
+  .viewer-container{
+    position:relative;width:100%;height:100%;border-radius:18px;overflow:hidden;background:#04120e;
+    border:1px solid var(--line-2);box-shadow:var(--shadow),inset 0 0 0 7px rgba(203,161,78,.05);
+  }
+  .viewer-container:fullscreen{border-radius:0;border:none;box-shadow:none}
+  .viewer-container:-webkit-full-screen{border-radius:0;border:none;box-shadow:none}
+  .viewer-container.css-fs{position:fixed;inset:0;z-index:9999;border-radius:0;border:none;box-shadow:none;height:100vh}
+  .viewer-container::before{content:"";position:absolute;inset:11px;z-index:4;pointer-events:none;
+    border:1px solid rgba(203,161,78,.42);border-radius:11px}
+  .viewer-container::after{content:"";position:absolute;inset:15px;z-index:4;pointer-events:none;
+    border:1px solid rgba(203,161,78,.16);border-radius:8px}
+  /* corner ornaments */
+  .corner{position:absolute;z-index:5;width:26px;height:26px;pointer-events:none;opacity:.85}
+  .corner svg{width:100%;height:100%}
+  .corner.tl{top:8px;left:8px} .corner.tr{top:8px;right:8px;transform:scaleX(-1)}
+  .corner.bl{bottom:8px;left:8px;transform:scaleY(-1)} .corner.br{bottom:8px;right:8px;transform:scale(-1,-1)}
+
+  .viewer{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;z-index:2}
+  canvas{max-width:100%;max-height:100%;object-fit:contain;background:#fdfaf1;border-radius:4px;box-shadow:0 16px 44px rgba(0,0,0,.5)}
+
+  .empty{position:absolute;inset:0;z-index:3;display:grid;place-items:center;text-align:center;padding:26px}
+  .empty.hide{display:none}
+  .empty .card{max-width:380px;display:grid;gap:16px;justify-items:center}
+  .empty .motif{width:74px;height:74px;display:grid;place-items:center;border-radius:50%;
+    background:radial-gradient(circle at 32% 28%,#1a5645,#0a2c24);border:1.5px solid var(--line-2);box-shadow:var(--glow)}
+  .empty .motif svg{width:40px;height:40px}
+  .empty h2{margin:0;font-family:"Amiri",serif;font-size:24px;color:var(--cream);font-weight:700}
+  .empty p{margin:0;color:var(--muted);font-size:14px;line-height:1.75}
+
+  .overlay{position:absolute;inset:15px;z-index:5;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}
+  .chip{pointer-events:auto;background:rgba(5,20,15,.74);color:var(--cream);padding:7px 13px;border-radius:999px;
+    font-size:13px;font-weight:600;border:1px solid var(--line-2);backdrop-filter:blur(7px)}
+  .chip b{color:var(--gold-soft);font-family:"Cairo"}
+
+  .big-controls{position:absolute;inset:0;z-index:5;display:flex;justify-content:space-between;align-items:center;padding:18px;pointer-events:none}
+  .navBtn{pointer-events:auto;width:62px;height:62px;border-radius:50%;border:1px solid var(--line-2);
+    background:rgba(5,20,15,.6);color:var(--gold-soft);font-size:24px;display:grid;place-items:center;cursor:pointer;
+    backdrop-filter:blur(7px);transition:background .2s,transform .15s}
+  .navBtn:hover{background:rgba(203,161,78,.18);transform:scale(1.06)}
+  .navBtn:disabled{opacity:.3;cursor:default;transform:none}
+
+  /* ===== Footer ===== */
+  footer{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 24px;
+    color:var(--muted);font-size:12.5px;background:rgba(6,32,27,.9);border-top:1px solid var(--line)}
+  .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0c332a;border:1px solid var(--line);
+    color:var(--gold-soft);padding:2px 7px;border-radius:6px;font-size:11.5px}
+  #saved{color:var(--gold-soft);font-weight:600;min-height:16px}
+
+  @media (max-width:760px){
+    header{padding:12px 15px} .brand h1{font-size:20px} .controls{padding:12px 15px}
+    .stage{padding:12px 15px} .navBtn{width:52px;height:52px;font-size:20px}
+    footer{flex-direction:column;gap:6px;align-items:flex-start} .footer-keys{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="brand">
+      <div class="seal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ecd394" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h8a2.5 2.5 0 0 1 2.5 2.5V20a2 2 0 0 0-2-2H4z"/><path d="M20 4h-3.5A2.5 2.5 0 0 0 14 6.5"/>
+          <path d="M12 2l1.2 2 2.2.4-1.6 1.7.3 2.3L12 7.3 9.9 8.4l.3-2.3L8.6 4.4 10.8 4z" transform="translate(6.5 -1) scale(.55)"/>
+        </svg>
+      </div>
+      <div>
+        <h1>المصحف الشريف</h1>
+        <div class="sub">قارئ PDF مع تقليب تلقائي</div>
+      </div>
+    </div>
+    <div class="head-actions">
+      <button id="openBtn" class="btn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>اختر ملف PDF</button>
+      <button id="fsBtn" class="btn ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg>ملء الشاشة</button>
+    </div>
+    <input id="fileInput" type="file" accept="application/pdf" hidden />
+  </header>
+
+  <section class="controls">
+    <div class="field">
+      <span class="label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11a2 2 0 0 1 2 2v14l-4-3-4 3V6"/></svg>الصفحة الحالية</span>
+      <div class="row">
+        <input id="pageInput" class="input" type="number" min="1" value="1" style="max-width:120px" />
+        <button id="goBtn" class="btn">اذهب</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>مدة التقليب (ثوانٍ)</span>
+      <div class="row">
+        <input id="intervalInput" class="input" type="number" min="3" step="1" value="60" style="max-width:130px" />
+        <button id="applyInterval" class="btn">تطبيق</button>
+      </div>
+      <small class="hint" id="nextFlip">التقليب كل <b>60</b> ثانية</small>
+    </div>
+
+    <div class="field">
+      <span class="label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 5v14l11-7z"/></svg>التحكم</span>
+      <div class="row">
+        <button id="playBtn" class="btn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 5v14l11-7z"/></svg>تشغيل تلقائي</button>
+        <button id="pauseBtn" class="btn" disabled>إيقاف مؤقت</button>
+        <button id="prevBtn" class="btn">◀︎ السابقة</button>
+        <button id="nextBtn" class="btn">التالية ▶︎</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2l4 4-4 4M3 6h18M7 22l-4-4 4-4M21 18H3"/></svg>خيارات</span>
+      <div class="row">
+        <label class="switch"><input id="loopToggle" type="checkbox" checked /> إعادة من البداية عند النهاية</label>
+      </div>
+    </div>
+  </section>
+
+  <div class="stage">
+    <div class="flip-progress"><div class="fill" id="flipFill"></div></div>
+    <div class="viewer-container">
+      <span class="corner tl"><svg viewBox="0 0 40 40" fill="none" stroke="#cba14e" stroke-width="1.5"><path d="M4 4h14M4 4v14M4 12a8 8 0 0 1 8-8"/></svg></span>
+      <span class="corner tr"><svg viewBox="0 0 40 40" fill="none" stroke="#cba14e" stroke-width="1.5"><path d="M4 4h14M4 4v14M4 12a8 8 0 0 1 8-8"/></svg></span>
+      <span class="corner bl"><svg viewBox="0 0 40 40" fill="none" stroke="#cba14e" stroke-width="1.5"><path d="M4 4h14M4 4v14M4 12a8 8 0 0 1 8-8"/></svg></span>
+      <span class="corner br"><svg viewBox="0 0 40 40" fill="none" stroke="#cba14e" stroke-width="1.5"><path d="M4 4h14M4 4v14M4 12a8 8 0 0 1 8-8"/></svg></span>
+
+      <section class="viewer" id="viewer"><canvas id="pdfCanvas"></canvas></section>
+
+      <div class="empty" id="emptyState">
+        <div class="card">
+          <div class="motif">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#ecd394" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h8a2.5 2.5 0 0 1 2.5 2.5V20a2 2 0 0 0-2-2H4z"/><path d="M20 4h-4a2.5 2.5 0 0 0-2.5 2.5"/></svg>
+          </div>
+          <h2>ابدأ بفتح مصحفك</h2>
+          <p>اختر ملف PDF من الزر أعلاه، وسيُعرض هنا بجودة عالية مع إمكانية التقليب التلقائي للصفحات. النص العربي يظهر بحروفٍ متصلة بشكل صحيح.</p>
+        </div>
+      </div>
+
+      <div class="big-controls">
+        <button id="bigPrev" class="navBtn" aria-label="السابقة">◀</button>
+        <button id="bigNext" class="navBtn" aria-label="التالية">▶</button>
+      </div>
+
+      <div class="overlay">
+        <span class="chip" id="pageChip">الصفحة <b>1</b> / —</span>
+        <span class="chip" id="status">جاهز</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-keys">اختصارات: <span class="kbd">Space</span> تشغيل/إيقاف — <span class="kbd">←/→</span> تنقّل — <span class="kbd">F</span> ملء الشاشة</div>
+    <div id="saved"></div>
+  </footer>
+</div>
+
+<script type="module">
+  import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.min.mjs';
+  const PV='6.1.200';
+  const CMAP=`https://cdn.jsdelivr.net/npm/pdfjs-dist@${PV}/cmaps/`;
+  const STDF=`https://cdn.jsdelivr.net/npm/pdfjs-dist@${PV}/standard_fonts/`;
+  pdfjsLib.GlobalWorkerOptions.workerSrc=`https://cdn.jsdelivr.net/npm/pdfjs-dist@${PV}/build/pdf.worker.min.mjs`;
+  const $=id=>document.getElementById(id);
+
+  const fileInput=$('fileInput'),openBtn=$('openBtn'),fsBtn=$('fsBtn');
+  const canvas=$('pdfCanvas'),ctx=canvas.getContext('2d');
+  const pageChip=$('pageChip'),statusChip=$('status'),emptyState=$('emptyState');
+  const viewerContainer=document.querySelector('.viewer-container');
+  const pageInput=$('pageInput'),goBtn=$('goBtn');
+  const intervalInput=$('intervalInput'),applyInterval=$('applyInterval'),nextFlip=$('nextFlip');
+  const playBtn=$('playBtn'),pauseBtn=$('pauseBtn'),prevBtn=$('prevBtn'),nextBtn=$('nextBtn');
+  const bigPrev=$('bigPrev'),bigNext=$('bigNext'),loopToggle=$('loopToggle'),saved=$('saved');
+  const flipFill=$('flipFill');
+
+  let pdf=null,pageNum=1,pageCount=0,timer=null,intervalSec=60,fileName=null,flipStart=0,raf=null;
+
+  const setStatus=t=>statusChip.textContent=t;
+  function setPageChip(){ pageChip.innerHTML=`الصفحة <b>${pageNum}</b> / ${pageCount||'—'}`; pageInput.value=pageNum; }
+  function saveProgress(){ if(!fileName)return; try{ localStorage.setItem('quran:auto:'+fileName,JSON.stringify({pageNum,intervalSec,loop:loopToggle.checked})); saved.textContent='تم الحفظ ✓'; setTimeout(()=>saved.textContent='',900);}catch(e){} }
+  function loadProgress(){ if(!fileName)return; try{ const r=localStorage.getItem('quran:auto:'+fileName); if(!r)return; const d=JSON.parse(r);
+    if(d.pageNum)pageNum=d.pageNum; if(d.intervalSec){intervalSec=d.intervalSec;intervalInput.value=intervalSec;nextFlip.innerHTML=`التقليب كل <b>${intervalSec}</b> ثانية`;}
+    if(typeof d.loop==='boolean')loopToggle.checked=d.loop; }catch(e){} }
+
+  function fitScale(vp){ const w=viewerContainer.clientWidth,h=viewerContainer.clientHeight; return Math.min(w/vp.width,h/vp.height)*0.92; }
+
+  const QUALITY=2;      // suréchantillonnage : rend le PDF à 2× les pixels écran => texte net
+  const MAX_DIM=5200;   // limite mémoire pour les canvas très grands
+  async function render(){
+    if(!pdf)return; setStatus('جارٍ العرض…');
+    try{
+      const page=await pdf.getPage(pageNum);
+      const base=page.getViewport({scale:1});
+      const dpr=window.devicePixelRatio||1;
+      const dispScale=fitScale(base);                 // taille d'affichage (CSS)
+      let renderScale=dispScale*dpr*QUALITY;           // résolution réelle du rendu (haute)
+      const probe=page.getViewport({scale:renderScale});
+      const big=Math.max(probe.width,probe.height);
+      if(big>MAX_DIM) renderScale*=MAX_DIM/big;         // bride si trop grand
+      const vp=page.getViewport({scale:renderScale});
+      canvas.width=vp.width; canvas.height=vp.height;   // bitmap haute résolution
+      canvas.style.width=(base.width*dispScale)+'px';   // affiché à la taille ajustée
+      canvas.style.height=(base.height*dispScale)+'px';
+      ctx.setTransform(1,0,0,1,0,0);
+      if(ctx.imageSmoothingEnabled!==undefined){ ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high'; }
+      await page.render({canvasContext:ctx,viewport:vp}).promise;
+      setPageChip(); setStatus('جاهز'); saveProgress();
+    }catch(err){ console.error(err); setStatus('خطأ في العرض'); }
+  }
+
+  function tick(){ if(!timer)return; const e=(Date.now()-flipStart)/(intervalSec*1000); flipFill.style.width=Math.min(100,e*100)+'%'; raf=requestAnimationFrame(tick); }
+  function resetFlip(){ flipStart=Date.now(); }
+  function play(){ if(timer||!pdf)return; playBtn.textContent='قيد التشغيل…'; playBtn.disabled=true; pauseBtn.disabled=false; setStatus('تقليب تلقائي…');
+    resetFlip(); raf=requestAnimationFrame(tick);
+    timer=setInterval(()=>{ if(pageNum<pageCount){pageNum++;render();} else if(loopToggle.checked){pageNum=1;render();} else {pause();return;} resetFlip(); },intervalSec*1000); }
+  function pause(){ if(!timer)return; clearInterval(timer); timer=null; if(raf)cancelAnimationFrame(raf); flipFill.style.width='0';
+    playBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 5v14l11-7z"/></svg>تشغيل تلقائي'; playBtn.disabled=false; pauseBtn.disabled=true; setStatus('متوقف مؤقتًا'); }
+
+  function next(){ if(!pdf)return; if(pageNum<pageCount){pageNum++;render();if(timer)resetFlip();} }
+  function prev(){ if(!pdf)return; if(pageNum>1){pageNum--;render();if(timer)resetFlip();} }
+  function goTo(p){ if(!pdf)return; pageNum=Math.min(pageCount,Math.max(1,Math.floor(p||1))); render(); if(timer)resetFlip(); }
+
+  openBtn.addEventListener('click',()=>fileInput.click());
+  fileInput.addEventListener('change',async e=>{
+    const file=e.target.files[0]; if(!file)return; fileName=file.name; setStatus('تحميل الملف…');
+    try{
+      const buf=await file.arrayBuffer();
+      // cMap + standard fonts => correct Arabic letter joining (fixes separated letters)
+      // disableFontFace:true => rendu du texte via les contours exacts de la police intégrée
+      // (corrige l'espacement/kerning faussé des lettres). cMap/standardFonts pour les polices non-intégrées.
+      pdf=await pdfjsLib.getDocument({
+        data:new Uint8Array(buf),
+        cMapUrl:CMAP, cMapPacked:true,
+        standardFontDataUrl:STDF,
+        disableFontFace:true
+      }).promise;
+      pageCount=pdf.numPages; pageNum=1; emptyState.classList.add('hide');
+      setPageChip(); loadProgress(); await render();
+    }catch(err){ console.error(err); setStatus('تعذّر فتح الملف — تأكد أنه PDF صالح'); }
+  });
+
+  function fsActive(){ return document.fullscreenElement||document.webkitFullscreenElement||viewerContainer.classList.contains('css-fs'); }
+  function enterFS(){
+    const el=viewerContainer;
+    const req=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;
+    if(req){ Promise.resolve(req.call(el)).catch(()=>cssFS(true)); }
+    else cssFS(true);      // repli (Safari/iOS)
+  }
+  function exitFS(){
+    if(viewerContainer.classList.contains('css-fs')){ cssFS(false); return; }
+    const ex=document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen;
+    if(ex) Promise.resolve(ex.call(document)).catch(()=>{});
+  }
+  function cssFS(on){ viewerContainer.classList.toggle('css-fs',on); setTimeout(render,60); }
+  fsBtn.addEventListener('click',()=>{ fsActive()?exitFS():enterFS(); });
+  ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev,()=>{ setTimeout(render,80); }));
+  window.addEventListener('keydown',e=>{ if(e.key==='Escape'&&viewerContainer.classList.contains('css-fs')) cssFS(false); });
+  applyInterval.addEventListener('click',()=>{ const v=Math.max(3,Math.floor(+intervalInput.value||60)); intervalSec=v; intervalInput.value=v;
+    nextFlip.innerHTML=`التقليب كل <b>${v}</b> ثانية`; saveProgress(); if(timer){pause();play();} });
+
+  playBtn.addEventListener('click',play); pauseBtn.addEventListener('click',pause);
+  nextBtn.addEventListener('click',next); prevBtn.addEventListener('click',prev);
+  bigNext.addEventListener('click',next); bigPrev.addEventListener('click',prev);
+  goBtn.addEventListener('click',()=>goTo(+pageInput.value));
+
+  window.addEventListener('keydown',e=>{ const tag=(e.target.tagName||'').toLowerCase(); if(tag==='input')return;
+    if(e.key===' '){e.preventDefault();timer?pause():play();}
+    if(e.key==='ArrowRight')next(); if(e.key==='ArrowLeft')prev(); if(e.key.toLowerCase()==='f')fsBtn.click(); });
+
+  let rt=null; window.addEventListener('resize',()=>{ if(!pdf)return; clearTimeout(rt); rt=setTimeout(render,150); });
+</script>
+</body>
+</html>
+ect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
     :root{
